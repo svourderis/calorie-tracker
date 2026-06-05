@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calorie Tracker">
+<title>Calorie Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#F2EFE9;color:#1C1A17;min-height:100vh;padding:20px 16px 60px;}
+.wrap{max-width:520px;margin:0 auto;}
+h1{font-size:20px;font-weight:600;letter-spacing:-0.4px;}
+.sub{font-size:12px;color:#7A766E;margin-top:2px;}
+.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.card{background:#fff;border:1px solid #E2DDD5;border-radius:12px;padding:11px 8px;text-align:center;}
+.card-l{font-size:10px;color:#7A766E;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;}
+.card-v{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;}
+.card-s{font-size:10px;color:#AAA49A;margin-top:2px;}
+.bar-track{background:#E2DDD5;border-radius:4px;height:5px;margin-bottom:16px;overflow:hidden;}
+.bar-fill{height:5px;border-radius:4px;transition:width .5s,background .3s;}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.tab{font-size:12px;font-family:'DM Sans',sans-serif;padding:4px 12px;border:1px solid #DDD8CF;border-radius:20px;cursor:pointer;background:transparent;color:#7A766E;transition:all .15s;}
+.tab.on{background:#1C1A17;color:#fff;border-color:#1C1A17;}
+.log-box{background:#fff;border:1px solid #E2DDD5;border-radius:12px;padding:0 14px;margin-bottom:14px;min-height:70px;}
+.log-empty{font-size:13px;color:#B0ACA4;text-align:center;padding:1.6rem 0;}
+.row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #EAE6DF;}
+.row:last-child{border-bottom:none;}
+.row-time{font-family:'DM Mono',monospace;font-size:11px;color:#AAA49A;min-width:38px;padding-top:2px;}
+.row-food{font-size:13px;font-weight:500;flex:1;}
+.row-note{font-size:11px;color:#7A766E;font-style:italic;margin-top:1px;}
+.row-kcal{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;white-space:nowrap;}
+.del{background:none;border:none;cursor:pointer;color:#C4C0B8;font-size:18px;line-height:1;padding:2px 4px;}
+.del:hover{color:#C0392B;}
+.form-box{background:#fff;border:1px solid #E2DDD5;border-radius:12px;padding:16px;}
+.form-title{font-size:11px;font-weight:500;color:#7A766E;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.lbl{font-size:11px;font-weight:500;color:#7A766E;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;}
+select,input,textarea{font-family:'DM Sans',sans-serif;font-size:14px;color:#1C1A17;background:#F9F8F5;border:1px solid #DDD8CF;border-radius:8px;padding:8px 12px;width:100%;outline:none;appearance:none;-webkit-appearance:none;transition:border-color .15s;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237A766E' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+select:focus,input:focus,textarea:focus{border-color:#2A7A5A;background:#fff;}
+textarea{resize:none;height:52px;font-size:13px;}
+.kcal-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:4px;}
+.kcal-box{background:#EAF4EF;border:1px solid #B8DFC9;border-radius:8px;padding:8px 12px;font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:#2A7A5A;min-height:38px;display:flex;align-items:center;}
+.ai-btn{white-space:nowrap;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;background:#1C1A17;color:#fff;border:none;border-radius:8px;padding:0 16px;height:38px;cursor:pointer;}
+.ai-btn:disabled{opacity:.4;cursor:default;}
+.note{font-size:11px;color:#2A7A5A;font-style:italic;margin-bottom:10px;}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;}
+.add-btn{font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;background:#2A7A5A;color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;}
+.lnk{font-size:12px;color:#B0ACA4;background:none;border:none;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif;}
+.status{font-size:12px;text-align:center;padding:6px 0;min-height:22px;}
+.chips-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;border:1px solid #DDD8CF;background:#fff;font-size:12px;color:#1C1A17;cursor:pointer;white-space:nowrap;}
+.chip:hover{border-color:#2A7A5A;background:#EAF4EF;color:#2A7A5A;}
+.chip-x{background:none;border:none;cursor:pointer;color:#C4C0B8;font-size:14px;line-height:1;padding:0 0 0 2px;}
+.chip-x:hover{color:#C0392B;}
+.hint{font-size:11px;color:#AAA49A;text-align:center;margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div>
+      <h1>Calorie Tracker</h1>
+      <p class="sub" id="dlabel"></p>
+    </div>
+  </div>
+
+  <div class="grid4">
+    <div class="card"><div class="card-l">Στόχος</div><div class="card-v">1.400</div><div class="card-s">kcal</div></div>
+    <div class="card"><div class="card-l">Σύνολο</div><div class="card-v" id="vTotal">0</div><div class="card-s">kcal</div></div>
+    <div class="card"><div class="card-l">Απομένουν</div><div class="card-v" id="vRemain">1.400</div><div class="card-s">kcal</div></div>
+    <div class="card"><div class="card-l">Γεύματα</div><div class="card-v" id="vMeals">0</div><div class="card-s">σήμερα</div></div>
+  </div>
+
+  <div class="bar-track"><div class="bar-fill" id="bar" style="width:0%;background:#2A7A5A"></div></div>
+  <div class="tabs" id="tabs"></div>
+
+  <div class="log-box" id="logBox">
+    <div class="log-empty" id="logEmpty">Δεν έχεις καταγράψει τίποτα ακόμα.</div>
+  </div>
+
+  <div class="form-box">
+    <p class="form-title">Νέα καταχώρηση</p>
+
+    <div class="g2">
+      <div><label class="lbl">Ημερομηνία</label><select id="fDate"></select></div>
+      <div><label class="lbl">Ώρα</label><select id="fTime"></select></div>
+    </div>
+
+    <div id="chipsWrap" style="display:none">
+      <div class="chips-hdr">
+        <label class="lbl" style="margin:0">Αποθηκευμένα</label>
+        <button class="lnk" id="editBtn" onclick="toggleEdit()">Διαχείριση</button>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div style="margin-bottom:10px">
+      <label class="lbl">Φαγητό / Ποτό</label>
+      <input type="text" id="fFood" placeholder="π.χ. Καφές 1ος, σαλάτα τόνου..." onkeydown="if(event.key==='Enter')calcKcal()"/>
+    </div>
+
+    <div class="kcal-row">
+      <div>
+        <label class="lbl">Θερμίδες</label>
+        <div class="kcal-box" id="kcalBox">—</div>
+      </div>
+      <button class="ai-btn" id="aiBtn" onclick="calcKcal()">Υπολόγισε ↗</button>
+    </div>
+    <div class="note" id="kcalNote" style="display:none"></div>
+    <div style="margin-bottom:10px"></div>
+
+    <div style="margin-bottom:12px">
+      <label class="lbl">Σχόλια (προαιρετικά)</label>
+      <textarea id="fComment" placeholder="π.χ. εστιατόριο, μετά γυμναστική..."></textarea>
+    </div>
+
+    <div class="foot">
+      <button class="add-btn" onclick="addEntry()">+ Καταχώρηση</button>
+      <button class="lnk" onclick="resetDay()">Καθαρισμός ημέρας</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <p class="hint">Τα δεδομένα αποθηκεύονται αυτόματα στον browser σου.</p>
+</div>
+
+<script>
+var GOAL = 1400;
+var data = {}, foods = [], activeDay = '', pendingKcal = null, editing = false;
+var db = null;
+
+// IndexedDB
+function openDB() {
+  return new Promise(function(res, rej) {
+    var r = indexedDB.open('CaloTracker2', 1);
+    r.onupgradeneeded = function(e) { e.target.result.createObjectStore('kv', {keyPath:'k'}); };
+    r.onsuccess = function(e) { res(e.target.result); };
+    r.onerror = function() { rej(); };
+  });
+}
+function dbGet(key) {
+  return new Promise(function(res) {
+    var r = db.transaction('kv','readonly').objectStore('kv').get(key);
+    r.onsuccess = function() { res(r.result ? r.result.v : null); };
+    r.onerror = function() { res(null); };
+  });
+}
+function dbSet(key, val) {
+  return new Promise(function(res) {
+    var tx = db.transaction('kv','readwrite');
+    tx.objectStore('kv').put({k:key, v:val});
+    tx.oncomplete = res; tx.onerror = res;
+  });
+}
+async function save() {
+  await dbSet('data', JSON.stringify(data));
+  await dbSet('foods', JSON.stringify(foods));
+}
+
+// Helpers
+function todayKey() {
+  return new Date().toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function nearestSlot() {
+  var n=new Date(), h=n.getHours(), m=n.getMinutes();
+  var rm=Math.round(m/30)*30, rh=rm===60?h+1:h, rv=rm===60?0:rm;
+  return String(Math.min(rh,23)).padStart(2,'0')+':'+String(rv).padStart(2,'0');
+}
+function setStatus(msg, ok) {
+  var el=document.getElementById('status');
+  el.textContent=msg;
+  el.style.color=ok?'#2A7A5A':(msg?'#C0392B':'#7A766E');
+  if(msg) setTimeout(function(){el.textContent='';},2500);
+}
+
+// Build dropdowns
+function buildDates() {
+  var sel=document.getElementById('fDate'), t=new Date();
+  for(var i=0;i<7;i++){
+    var d=new Date(t); d.setDate(t.getDate()-i);
+    var k=d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    var o=document.createElement('option');
+    o.value=k; o.textContent=i===0?'Σήμερα — '+k:i===1?'Χθες — '+k:k;
+    sel.appendChild(o);
+  }
+}
+function buildTimes() {
+  var sel=document.getElementById('fTime'), near=nearestSlot();
+  for(var h=6;h<=23;h++) for(var m of [0,30]) {
+    var t=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+    var o=document.createElement('option');
+    o.value=t; o.textContent=t;
+    if(t===near) o.selected=true;
+    sel.appendChild(o);
+  }
+}
+
+// Chips
+function renderChips() {
+  var wrap=document.getElementById('chipsWrap');
+  var cont=document.getElementById('chips');
+  if(!foods.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  cont.innerHTML=foods.map(function(f,i){
+    return '<span class="chip" onclick="pickFood(\''+f.replace(/'/g,"\\'")+'\')">'
+      +f+(editing?'<button class="chip-x" onclick="delFood(event,'+i+')">×</button>':'')
+      +'</span>';
+  }).join('');
+}
+function pickFood(f) {
+  if(editing) return;
+  document.getElementById('fFood').value=f;
+  pendingKcal=null;
+  document.getElementById('kcalBox').textContent='—';
+  document.getElementById('kcalNote').style.display='none';
+}
+function toggleEdit() {
+  editing=!editing;
+  document.getElementById('editBtn').textContent=editing?'Τέλος':'Διαχείριση';
+  renderChips();
+}
+async function delFood(e, i) {
+  e.stopPropagation();
+  foods.splice(i,1);
+  await save(); renderChips();
+}
+
+// AI calc
+async function calcKcal() {
+  var food=document.getElementById('fFood').value.trim();
+  if(!food){setStatus('Γράψε τι έφαγες.');return;}
+  var btn=document.getElementById('aiBtn');
+  btn.disabled=true; btn.textContent='...';
+  document.getElementById('kcalBox').textContent='—';
+  document.getElementById('kcalNote').style.display='none';
+  pendingKcal=null;
+  try {
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:300,
+        system:'Υπολόγισε θερμίδες. Απάντα ΜΟΝΟ JSON χωρίς backticks: {"kcal":αριθμός,"note":"σύντομη ανάλυση max 70 χαρ"}',
+        messages:[{role:'user',content:food}]
+      })
+    });
+    var d=await resp.json();
+    var txt=d.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var p=JSON.parse(txt.trim());
+    pendingKcal=Math.round(Number(p.kcal)||0);
+    document.getElementById('kcalBox').textContent=pendingKcal+' kcal';
+    if(p.note){
+      var n=document.getElementById('kcalNote');
+      n.textContent=p.note; n.style.display='block';
+    }
+    setStatus('');
+  } catch(e) { setStatus('Σφάλμα. Δοκίμασε ξανά.'); }
+  btn.disabled=false; btn.textContent='Υπολόγισε ↗';
+}
+
+// Add entry
+async function addEntry() {
+  var food=document.getElementById('fFood').value.trim();
+  var day=document.getElementById('fDate').value;
+  var time=document.getElementById('fTime').value;
+  var comment=document.getElementById('fComment').value.trim();
+  if(!food){setStatus('Γράψε τι έφαγες.');return;}
+  if(pendingKcal===null){setStatus('Πάτα «Υπολόγισε» πρώτα.');return;}
+  if(!data[day]) data[day]=[];
+  data[day].push({time:time,food:food,kcal:pendingKcal,note:document.getElementById('kcalNote').textContent,comment:comment});
+  if(!foods.includes(food)) foods.unshift(food);
+  await save();
+  if(activeDay!==day) setActive(day);
+  else {renderLog();updateSummary();}
+  document.getElementById('fFood').value='';
+  document.getElementById('fComment').value='';
+  document.getElementById('kcalBox').textContent='—';
+  document.getElementById('kcalNote').style.display='none';
+  pendingKcal=null;
+  renderChips();
+  setStatus('✓ Καταχωρήθηκε!',true);
+}
+
+// Remove entry
+async function removeEntry(day,i) {
+  data[day].splice(i,1);
+  if(!data[day].length) delete data[day];
+  await save();
+  if(!data[activeDay]){
+    var keys=Object.keys(data);
+    activeDay=keys.length?keys[0]:todayKey();
+    if(!data[activeDay]) data[activeDay]=[];
+  }
+  renderTabs(); renderLog(); updateSummary();
+}
+
+// Reset day
+async function resetDay() {
+  if(!confirm('Να διαγραφούν όλες οι καταχωρήσεις της ημέρας;')) return;
+  data[activeDay]=[];
+  await save(); renderLog(); updateSummary();
+}
+
+// Render
+function setActive(day) {
+  activeDay=day;
+  if(!data[activeDay]) data[activeDay]=[];
+  var tk=todayKey();
+  document.getElementById('dlabel').textContent=day===tk?'Σήμερα — '+day:day;
+  renderTabs(); renderLog(); updateSummary();
+}
+function renderTabs() {
+  var keys=Object.keys(data).sort(function(a,b){
+    var pa=a.split('/'),pb=b.split('/');
+    return new Date(pb[2],pb[1]-1,pb[0])-new Date(pa[2],pa[1]-1,pa[0]);
+  });
+  document.getElementById('tabs').innerHTML=keys.map(function(k){
+    return '<button class="tab'+(k===activeDay?' on':'')+'" onclick="setActive(\''+k+'\')">'+k+'</button>';
+  }).join('');
+}
+function updateSummary() {
+  var entries=data[activeDay]||[];
+  var total=Math.round(entries.reduce(function(s,e){return s+e.kcal;},0));
+  var remain=Math.max(0,GOAL-total);
+  var pct=Math.min(100,Math.round(total/GOAL*100));
+  document.getElementById('vTotal').textContent=total.toLocaleString('el-GR');
+  document.getElementById('vRemain').textContent=remain.toLocaleString('el-GR');
+  document.getElementById('vMeals').textContent=entries.length;
+  var bar=document.getElementById('bar');
+  bar.style.width=pct+'%';
+  bar.style.background=pct>100?'#C0392B':pct>85?'#C47A0A':'#2A7A5A';
+}
+function renderLog() {
+  var entries=data[activeDay]||[];
+  var box=document.getElementById('logBox');
+  if(!entries.length){
+    box.innerHTML='<div class="log-empty">Δεν έχεις καταγράψει τίποτα ακόμα.</div>';
+    return;
+  }
+  box.innerHTML=entries.map(function(e,i){
+    return '<div class="row">'
+      +'<div class="row-time">'+e.time+'</div>'
+      +'<div style="flex:1"><div class="row-food">'+e.food+'</div>'
+      +(e.note?'<div class="row-note">'+e.note+'</div>':'')
+      +(e.comment?'<div class="row-note" style="color:#AAA49A">'+e.comment+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:4px">'
+      +'<span class="row-kcal">~'+Math.round(e.kcal)+'</span>'
+      +'<button class="del" onclick="removeEntry(\''+activeDay+'\','+i+')">&#215;</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+// Init
+(async function(){
+  try { db=await openDB(); } catch(e){ db=null; }
+  if(db){
+    try{
+      var rd=await dbGet('data'); if(rd) data=JSON.parse(rd);
+      var rf=await dbGet('foods'); if(rf) foods=JSON.parse(rf);
+    }catch(e){}
+  }
+  buildDates(); buildTimes();
+  var today=todayKey();
+  if(!data[today]) data[today]=[];
+  setActive(today);
+  renderChips();
+})();
+</script>
+</body>
+</html>
