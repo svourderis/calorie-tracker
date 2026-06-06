@@ -57,9 +57,6 @@ textarea{resize:none;height:52px;font-size:13px;}
 .chip:hover{border-color:#2A7A5A;background:#EAF4EF;color:#2A7A5A;}
 .chip-x{background:none;border:none;cursor:pointer;color:#C4C0B8;font-size:14px;line-height:1;padding:0 0 0 2px;}
 .chip-x:hover{color:#C0392B;}
-.sync-row{display:flex;gap:8px;align-items:center;margin-bottom:4px;}
-.sync-btn{font-size:12px;font-family:'DM Sans',sans-serif;background:#fff;border:1px solid #DDD8CF;border-radius:8px;padding:6px 12px;cursor:pointer;color:#7A766E;}
-.sync-btn:hover{border-color:#2A7A5A;color:#2A7A5A;}
 </style>
 </head>
 <body>
@@ -68,10 +65,6 @@ textarea{resize:none;height:52px;font-size:13px;}
     <div>
       <h1>Calorie Tracker</h1>
       <p class="sub" id="dlabel"></p>
-    </div>
-    <div class="sync-row">
-      <button class="sync-btn" onclick="syncFromAirtable()">↓ Φόρτωση</button>
-      <button class="sync-btn" onclick="syncToAirtable()">↑ Αποθήκευση</button>
     </div>
   </div>
 
@@ -134,18 +127,9 @@ textarea{resize:none;height:52px;font-size:13px;}
 </div>
 
 <script>
-var GOAL = 1400;
-var AT_TOKEN = 'pathaOStqTSHDTGtj.141dc0847be3d4fb3ab891ca17299a1357da1b40893f9ac87fa2249587235c4e';
-var AT_BASE  = 'appkuUnabEZjj8F6L';
-var AT_TABLE = 'tblM3GJgICaqS7nN1';
-var AT_URL   = 'https://api.airtable.com/v0/'+AT_BASE+'/'+AT_TABLE;
-var AT_FOODS_TABLE = 'tblM3GJgICaqS7nN1'; // same base, we store foods in localStorage as backup
+var GOAL=1400, data={}, foods=[], activeDay='', pendingKcal=null, editing=false, db=null;
 
-var data = {}, foods = [], activeDay = '', pendingKcal = null, editing = false;
-var db = null;
-
-// ---- IndexedDB (local backup) ----
-function openDB() {
+function openDB(){
   return new Promise(function(res,rej){
     var r=indexedDB.open('CaloTracker2',1);
     r.onupgradeneeded=function(e){e.target.result.createObjectStore('kv',{keyPath:'k'});};
@@ -167,119 +151,14 @@ function dbSet(key,val){
     tx.oncomplete=res;tx.onerror=res;
   });
 }
-async function saveLocal(){
+async function save(){
   if(db){
     await dbSet('data',JSON.stringify(data));
     await dbSet('foods',JSON.stringify(foods));
   }
 }
 
-// ---- Airtable ----
-async function syncToAirtable(){
-  setStatus('Αποθήκευση στο Airtable...');
-  try {
-    // Φόρτωσε όλα τα υπάρχοντα records για να τα διαγράψεις
-    var existing = await atFetch('GET','');
-    var ids = existing.records.map(function(r){return r.id;});
-    // Διέγραψε σε batches των 10
-    for(var i=0;i<ids.length;i+=10){
-      var batch=ids.slice(i,i+10);
-      var qs=batch.map(function(id){return 'records[]='+id;}).join('&');
-      await atFetch('DELETE','?'+qs);
-    }
-    // Δημιούργησε νέα records
-    var records=[];
-    Object.keys(data).forEach(function(day){
-      (data[day]||[]).forEach(function(e){
-        records.push({fields:{
-          'Φαγητό': e.food,
-          'Ημερομηνία': dayToISO(day),
-          'Ώρα': e.time,
-          'Θερμίδες': e.kcal,
-          'Σχόλια': e.comment||''
-        }});
-      });
-    });
-    // Ανέβασε σε batches των 10
-    for(var j=0;j<records.length;j+=10){
-      var b=records.slice(j,j+10);
-      await atFetch('POST','',{records:b});
-    }
-    // Αποθήκευσε και τα foods labels
-    await atFetch('POST','/meta',{}) // δεν χρειάζεται, τα foods τα κρατάμε τοπικά
-    await saveLocal();
-    setStatus('✓ Αποθηκεύτηκε στο Airtable!',true);
-  } catch(e){
-    setStatus('Σφάλμα Airtable: '+e.message);
-  }
-}
-
-async function syncFromAirtable(){
-  setStatus('Φόρτωση από Airtable...');
-  try {
-    var result = await atFetch('GET','');
-    data={};
-    (result.records||[]).forEach(function(r){
-      var f=r.fields;
-      var day=isoToDay(f['Ημερομηνία']||'');
-      if(!day) return;
-      if(!data[day]) data[day]=[];
-      data[day].push({
-        food: f['Φαγητό']||'',
-        time: f['Ώρα']||'',
-        kcal: Number(f['Θερμίδες'])||0,
-        note: '',
-        comment: f['Σχόλια']||''
-      });
-    });
-    // Ταξινόμησε ανά ώρα
-    Object.keys(data).forEach(function(day){
-      data[day].sort(function(a,b){return a.time.localeCompare(b.time);});
-    });
-    var today=todayKey();
-    if(!data[today]) data[today]=[];
-    await saveLocal();
-    setActive(activeDay&&data[activeDay]?activeDay:today);
-    setStatus('✓ Φορτώθηκε!',true);
-  } catch(e){
-    setStatus('Σφάλμα φόρτωσης: '+e.message);
-  }
-}
-
-async function atFetch(method, path, body){
-  var opts={
-    method:method,
-    headers:{
-      'Authorization':'Bearer '+AT_TOKEN,
-      'Content-Type':'application/json'
-    }
-  };
-  if(body) opts.body=JSON.stringify(body);
-  var url=AT_URL+path;
-  var r=await fetch(url,opts);
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  if(method==='DELETE') return {};
-  return r.json();
-}
-
-function dayToISO(day){
-  // dd/mm/yyyy -> yyyy-mm-dd
-  var p=day.split('/');
-  if(p.length!==3) return '';
-  return p[2]+'-'+p[1]+'-'+p[0];
-}
-function isoToDay(iso){
-  // yyyy-mm-dd -> dd/mm/yyyy
-  if(!iso) return '';
-  var p=iso.split('-');
-  if(p.length!==3) return '';
-  return p[2]+'/'+p[1]+'/'+p[0];
-}
-
-// ---- Helpers ----
-function todayKey(){
-  return new Date().toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'});
-}
+function todayKey(){return new Date().toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'});}
 function nearestSlot(){
   var n=new Date(),h=n.getHours(),m=n.getMinutes();
   var rm=Math.round(m/30)*30,rh=rm===60?h+1:h,rv=rm===60?0:rm;
@@ -289,10 +168,9 @@ function setStatus(msg,ok){
   var el=document.getElementById('status');
   el.textContent=msg;
   el.style.color=ok?'#2A7A5A':(msg?'#C0392B':'#7A766E');
-  if(ok&&msg) setTimeout(function(){el.textContent='';},2500);
+  if(msg) setTimeout(function(){el.textContent='';},2500);
 }
 
-// ---- Dropdowns ----
 function buildDates(){
   var sel=document.getElementById('fDate'),t=new Date();
   for(var i=0;i<7;i++){
@@ -314,16 +192,13 @@ function buildTimes(){
   }
 }
 
-// ---- Chips ----
 function renderChips(){
-  var wrap=document.getElementById('chipsWrap');
-  var cont=document.getElementById('chips');
+  var wrap=document.getElementById('chipsWrap'),cont=document.getElementById('chips');
   if(!foods.length){wrap.style.display='none';return;}
   wrap.style.display='block';
   cont.innerHTML=foods.map(function(f,i){
     return '<span class="chip" onclick="pickFood(\''+f.replace(/'/g,"\\'")+'\')">'
-      +f+(editing?'<button class="chip-x" onclick="delFood(event,'+i+')">×</button>':'')
-      +'</span>';
+      +f+(editing?'<button class="chip-x" onclick="delFood(event,'+i+')">×</button>':'')+'</span>';
   }).join('');
 }
 function pickFood(f){
@@ -341,10 +216,9 @@ function toggleEdit(){
 async function delFood(e,i){
   e.stopPropagation();
   foods.splice(i,1);
-  await saveLocal();renderChips();
+  await save();renderChips();
 }
 
-// ---- AI calc ----
 async function calcKcal(){
   var food=document.getElementById('fFood').value.trim();
   if(!food){setStatus('Γράψε τι έφαγες.');return;}
@@ -371,16 +245,12 @@ async function calcKcal(){
     var p=JSON.parse(txt.trim());
     pendingKcal=Math.round(Number(p.kcal)||0);
     document.getElementById('kcalBox').textContent=pendingKcal+' kcal';
-    if(p.note){
-      var n=document.getElementById('kcalNote');
-      n.textContent=p.note;n.style.display='block';
-    }
+    if(p.note){var n=document.getElementById('kcalNote');n.textContent=p.note;n.style.display='block';}
     setStatus('');
   }catch(e){setStatus('Σφάλμα υπολογισμού. Δοκίμασε ξανά.');}
   btn.disabled=false;btn.textContent='Υπολόγισε ↗';
 }
 
-// ---- Add entry ----
 async function addEntry(){
   var food=document.getElementById('fFood').value.trim();
   var day=document.getElementById('fDate').value;
@@ -392,7 +262,7 @@ async function addEntry(){
   var note=document.getElementById('kcalNote').textContent||'';
   data[day].push({time:time,food:food,kcal:pendingKcal,note:note,comment:comment});
   if(!foods.includes(food))foods.unshift(food);
-  await saveLocal();
+  await save();
   if(activeDay!==day)setActive(day);
   else{renderLog();updateSummary();}
   document.getElementById('fFood').value='';
@@ -401,30 +271,23 @@ async function addEntry(){
   document.getElementById('kcalNote').style.display='none';
   pendingKcal=null;
   renderChips();
-  setStatus('✓ Καταχωρήθηκε! (Πάτα ↑ για sync)',true);
+  setStatus('✓ Καταχωρήθηκε!',true);
 }
 
-// ---- Remove ----
 async function removeEntry(day,i){
   data[day].splice(i,1);
   if(!data[day].length)delete data[day];
-  await saveLocal();
-  if(!data[activeDay]){
-    var keys=Object.keys(data);
-    activeDay=keys.length?keys[0]:todayKey();
-    if(!data[activeDay])data[activeDay]=[];
-  }
+  await save();
+  if(!data[activeDay]){var keys=Object.keys(data);activeDay=keys.length?keys[0]:todayKey();if(!data[activeDay])data[activeDay]=[];}
   renderTabs();renderLog();updateSummary();
 }
 
-// ---- Reset ----
 async function resetDay(){
   if(!confirm('Να διαγραφούν όλες οι καταχωρήσεις της ημέρας;'))return;
   data[activeDay]=[];
-  await saveLocal();renderLog();updateSummary();
+  await save();renderLog();updateSummary();
 }
 
-// ---- Render ----
 function setActive(day){
   activeDay=day;
   if(!data[activeDay])data[activeDay]=[];
@@ -456,10 +319,7 @@ function updateSummary(){
 function renderLog(){
   var entries=data[activeDay]||[];
   var box=document.getElementById('logBox');
-  if(!entries.length){
-    box.innerHTML='<div class="log-empty">Δεν έχεις καταγράψει τίποτα ακόμα.</div>';
-    return;
-  }
+  if(!entries.length){box.innerHTML='<div class="log-empty">Δεν έχεις καταγράψει τίποτα ακόμα.</div>';return;}
   box.innerHTML=entries.map(function(e,i){
     return '<div class="row">'
       +'<div class="row-time">'+e.time+'</div>'
@@ -474,7 +334,6 @@ function renderLog(){
   }).join('');
 }
 
-// ---- Init ----
 (async function(){
   try{db=await openDB();}catch(e){db=null;}
   if(db){
