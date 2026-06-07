@@ -256,7 +256,7 @@ async function calcKcal(){
         'anthropic-dangerous-direct-browser-access':'true'
       },
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:300,
+        model:'claude-sonnet-4-5',max_tokens:300,
         system:'Υπολόγισε θερμίδες. Απάντα ΜΟΝΟ JSON χωρίς backticks: {"kcal":αριθμός,"note":"σύντομη ανάλυση max 70 χαρ"}',
         messages:[{role:'user',content:food}]
       })
