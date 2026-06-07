@@ -265,11 +265,15 @@ async function calcKcal(){
     if(d.error){setStatus('API: '+d.error.message);btn.disabled=false;btn.textContent='Υπολόγισε ↗';return;}
     var txt=d.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     txt=txt.replace(/```json|```/g,'').trim();
-    var p=JSON.parse(txt);
-    pendingKcal=Math.round(Number(p.kcal)||0);
-    document.getElementById('kcalBox').textContent=pendingKcal+' kcal';
-    if(p.note){var n=document.getElementById('kcalNote');n.textContent=p.note;n.style.display='block';}
-    setStatus('');
+    try {
+      var p=JSON.parse(txt);
+      pendingKcal=Math.round(Number(p.kcal)||0);
+      document.getElementById('kcalBox').textContent=pendingKcal+' kcal';
+      if(p.note){var n=document.getElementById('kcalNote');n.textContent=p.note;n.style.display='block';}
+      setStatus('');
+    } catch(je) {
+      setStatus('RAW: '+txt.substring(0,100));
+    }
   }catch(e){setStatus('Σφάλμα: '+e.message);}
   btn.disabled=false;btn.textContent='Υπολόγισε ↗';
 }
