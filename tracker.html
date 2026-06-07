@@ -82,6 +82,15 @@ textarea{resize:none;height:52px;font-size:13px;}
     <div class="log-empty">Δεν έχεις καταγράψει τίποτα ακόμα.</div>
   </div>
 
+  <div id="apiKeySection" style="display:none;background:#fff;border:1px solid #E2DDD5;border-radius:12px;padding:16px;margin-bottom:14px;">
+    <p style="font-size:11px;font-weight:500;color:#7A766E;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Anthropic API Key</p>
+    <p style="font-size:12px;color:#7A766E;margin-bottom:10px;">Βάλε το API key σου — αποθηκεύεται μόνο στο κινητό σου.</p>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..."/>
+      <button onclick="saveApiKey()" style="white-space:nowrap;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;background:#1C1A17;color:#fff;border:none;border-radius:8px;padding:0 16px;height:38px;cursor:pointer;">Αποθήκευση</button>
+    </div>
+  </div>
+
   <div class="form-box">
     <p class="form-title">Νέα καταχώρηση</p>
 
@@ -127,7 +136,7 @@ textarea{resize:none;height:52px;font-size:13px;}
 </div>
 
 <script>
-var GOAL=1400, data={}, foods=[], activeDay='', pendingKcal=null, editing=false, db=null;
+var GOAL=1400, data={}, foods=[], activeDay='', pendingKcal=null, editing=false, db=null, apiKey='';
 
 function openDB(){
   return new Promise(function(res,rej){
@@ -219,7 +228,17 @@ async function delFood(e,i){
   await save();renderChips();
 }
 
+async function saveApiKey(){
+  var k=document.getElementById('apiKeyInput').value.trim();
+  if(!k){setStatus('Βάλε το API key.');return;}
+  apiKey=k;
+  if(db) await dbSet('apiKey',apiKey);
+  document.getElementById('apiKeySection').style.display='none';
+  setStatus('✓ API key αποθηκεύτηκε!',true);
+}
+
 async function calcKcal(){
+  if(!apiKey){setStatus('Βάλε πρώτα το API key.');return;}
   var food=document.getElementById('fFood').value.trim();
   if(!food){setStatus('Γράψε τι έφαγες.');return;}
   var btn=document.getElementById('aiBtn');
@@ -232,7 +251,7 @@ async function calcKcal(){
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'x-api-key':'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',
+        'x-api-key': apiKey,
         'anthropic-version':'2023-06-01',
         'anthropic-dangerous-direct-browser-access':'true'
       },
@@ -343,7 +362,13 @@ function renderLog(){
     try{
       var rd=await dbGet('data');if(rd)data=JSON.parse(rd);
       var rf=await dbGet('foods');if(rf)foods=JSON.parse(rf);
+      var rk=await dbGet('apiKey');if(rk)apiKey=rk;
     }catch(e){}
+  }
+  if(apiKey){
+    document.getElementById('apiKeySection').style.display='none';
+  } else {
+    document.getElementById('apiKeySection').style.display='block';
   }
   buildDates();buildTimes();
   var today=todayKey();
