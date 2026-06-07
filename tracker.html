@@ -249,7 +249,7 @@ async function calcKcal(){
     document.getElementById('kcalBox').textContent=pendingKcal+' kcal';
     if(p.note){var n=document.getElementById('kcalNote');n.textContent=p.note;n.style.display='block';}
     setStatus('');
-  }catch(e){setStatus('Σφάλμα υπολογισμού. Δοκίμασε ξανά.');}
+  }catch(e){setStatus('Σφάλμα: '+e.message);}
   btn.disabled=false;btn.textContent='Υπολόγισε ↗';
 }
 
