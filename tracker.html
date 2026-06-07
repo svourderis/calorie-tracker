@@ -264,7 +264,8 @@ async function calcKcal(){
     var d=await resp.json();
     if(d.error){setStatus('API: '+d.error.message);btn.disabled=false;btn.textContent='Υπολόγισε ↗';return;}
     var txt=d.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    var p=JSON.parse(txt.trim());
+    txt=txt.replace(/```json|```/g,'').trim();
+    var p=JSON.parse(txt);
     pendingKcal=Math.round(Number(p.kcal)||0);
     document.getElementById('kcalBox').textContent=pendingKcal+' kcal';
     if(p.note){var n=document.getElementById('kcalNote');n.textContent=p.note;n.style.display='block';}
